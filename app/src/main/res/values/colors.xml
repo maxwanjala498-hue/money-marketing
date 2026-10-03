@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="binance_yellow">#FCD535</color>
+    <color name="binance_gold">#F0B90B</color>
+    <color name="background_dark">#0B0E11</color>
+    <color name="surface_dark">#181A20</color>
+    <color name="border_dark">#2B313A</color>
+    <color name="text_primary">#EAECEF</color>
+    <color name="text_secondary">#848E9C</color>
+    <color name="crypto_green">#0ECB81</color>
+    <color name="crypto_red">#F6465D</color>
+    <color name="ic_launcher_bg">#181A20</color>
+</resources>

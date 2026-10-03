@@ -1,5 +1,5 @@
 {
-  "name": "Binance Connect & Share",
+  "name": "Binance Connect",
   "description": "Securely connect your Binance account, monitor spot balances and real-time market valuations, and share privacy-protected portfolio reports and trade summaries.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

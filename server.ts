@@ -252,21 +252,12 @@ app.get('/api/share/:id', (req: Request, res: Response) => {
   return res.json({ success: true, snapshot });
 });
 
-// Dev server or static server
+// Server entrypoint
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-    });
-  }
+  app.use(express.static(__dirname));
+  app.get('*', (_req: Request, res: Response) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on http://0.0.0.0:${PORT}`);

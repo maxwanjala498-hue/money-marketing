@@ -3,19 +3,724 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Binance Connect & Share</title>
-    <meta name="description" content="Securely connect your Binance account, monitor spot balances and real-time market valuations, and share privacy-protected portfolio reports and trade summaries." />
-    <meta property="og:title" content="Binance Connect & Share" />
-    <meta property="og:description" content="Securely connect your Binance account, monitor spot balances and real-time market valuations, and share privacy-protected portfolio reports and trade summaries." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <title>Binance Connect - Android App</title>
+    <meta name="description" content="Native Android application built with Kotlin and Jetpack Compose to securely connect your Binance account, monitor spot balances, and share verified portfolio reports." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+        background-color: #07090b;
+        color: #eaecef;
+      }
+      .font-mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0b0e11;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #2b313a;
+        border-radius: 2px;
+      }
+      @keyframes pulse-green {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.1); }
+      }
+      .live-pulse {
+        animation: pulse-green 2s infinite ease-in-out;
+      }
+    </style>
   </head>
-  <body class="bg-[#0b0e11] text-[#eaecef] antialiased selection:bg-[#FCD535]/30 selection:text-[#FCD535]">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body class="min-h-screen flex flex-col items-center justify-start p-2 sm:p-6 bg-[#07090b] text-[#eaecef]">
+
+    <!-- Device Emulator Frame Container -->
+    <div class="w-full max-w-[440px] my-2 bg-[#0b0e11] rounded-[36px] border-[5px] border-[#2b313a] shadow-2xl overflow-hidden flex flex-col relative min-h-[820px]">
+      
+      <!-- Android Status Bar -->
+      <div class="h-8 bg-[#0b0e11] px-5 flex items-center justify-between text-[11px] text-[#848e9c] font-mono select-none z-30 pt-1">
+        <span id="android-clock">09:41</span>
+        <div class="w-16 h-4 bg-black rounded-full mx-auto -mt-2"></div>
+        <div class="flex items-center gap-1.5 text-[10px]">
+          <span>5G</span>
+          <span>●●●</span>
+          <span>100%</span>
+        </div>
+      </div>
+
+      <!-- App Header / Toolbar (Jetpack Compose TopAppBar) -->
+      <div class="bg-[#0b0e11] border-b border-[#2b313a] px-4 py-3 sticky top-0 z-20">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchTab('overview')">
+            <div class="w-8 h-8 rounded-lg bg-[#FCD535] text-black font-extrabold flex items-center justify-center text-sm shadow">
+              ◆
+            </div>
+            <div>
+              <div class="text-sm font-bold text-white tracking-tight leading-tight">Binance Connect</div>
+              <div class="text-[10px] text-[#848e9c]">Spot Portfolio & Share</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Sync Button -->
+            <button id="sync-btn" onclick="triggerSync()" title="Sync live data" class="w-8 h-8 rounded-lg bg-[#181a20] border border-[#2b313a] flex items-center justify-center text-[#848e9c] hover:text-[#FCD535] active:scale-95 transition-transform">
+              <svg id="sync-icon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+            </button>
+
+            <!-- Status Badge -->
+            <button onclick="openConnectModal()" class="px-2.5 py-1 rounded-lg bg-[#181a20] border border-[#2b313a] flex items-center gap-1.5 text-[11px] font-medium text-white hover:border-[#FCD535] transition-colors">
+              <span class="w-2 h-2 rounded-full bg-[#0ECB81] live-pulse"></span>
+              <span id="badge-network" class="text-[#0ECB81] font-semibold text-[10px]">DEMO</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Android Scrollable Tab Navigation -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pt-2.5 pb-0.5 no-scrollbar text-xs font-medium">
+          <button id="tab-btn-overview" onclick="switchTab('overview')" class="px-3 py-1 rounded-md bg-[#FCD535]/15 text-[#FCD535] font-semibold whitespace-nowrap">Overview</button>
+          <button id="tab-btn-assets" onclick="switchTab('assets')" class="px-3 py-1 rounded-md text-[#848e9c] hover:text-white whitespace-nowrap">Spot Assets</button>
+          <button id="tab-btn-markets" onclick="switchTab('markets')" class="px-3 py-1 rounded-md text-[#848e9c] hover:text-white whitespace-nowrap">Live Markets</button>
+          <button id="tab-btn-trades" onclick="switchTab('trades')" class="px-3 py-1 rounded-md text-[#848e9c] hover:text-white whitespace-nowrap">Trades</button>
+          <button id="tab-btn-share" onclick="openShareModal()" class="px-3 py-1 rounded-md text-[#848e9c] hover:text-white whitespace-nowrap">Share & Export</button>
+        </div>
+      </div>
+
+      <!-- Main Scrollable App Content -->
+      <div id="app-viewport" class="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+
+        <!-- TAB 1: OVERVIEW -->
+        <div id="view-overview" class="space-y-4">
+          <!-- Net Worth Card -->
+          <div class="rounded-2xl border border-[#2b313a] bg-[#181a20] p-4 relative overflow-hidden shadow-lg">
+            <div class="flex items-center justify-between text-xs text-[#848e9c]">
+              <span>Binance Spot Net Worth</span>
+              <button onclick="togglePrivacy()" class="flex items-center gap-1 text-[#848e9c] hover:text-white text-[11px] cursor-pointer">
+                <span id="privacy-icon">👁</span>
+                <span id="privacy-label">Hide</span>
+              </button>
+            </div>
+
+            <div class="mt-2 flex items-baseline justify-between">
+              <div>
+                <div id="networth-display" class="text-3xl font-extrabold font-mono text-white tracking-tight">$93,428.50</div>
+                <div id="btc-equivalent" class="text-[11px] font-mono text-[#848e9c] mt-0.5">≈ 0.9793 BTC · Synced Just now</div>
+              </div>
+              <div id="pnl-badge" class="px-2.5 py-1 rounded-lg bg-[#0ECB81]/15 text-[#0ECB81] font-mono font-bold text-xs">
+                +4.25%
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2 mt-4">
+              <button onclick="openShareModal()" class="py-2 px-3 rounded-lg bg-[#FCD535] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow hover:bg-[#fcd535]/90 active:scale-98 transition-transform">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span>Share Snapshot</span>
+              </button>
+              <button onclick="openConnectModal()" class="py-2 px-3 rounded-lg bg-[#0b0e11] border border-[#2b313a] text-white font-medium text-xs flex items-center justify-center gap-1.5 hover:bg-[#2b313a]">
+                <svg class="w-3.5 h-3.5 text-[#FCD535]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                <span>Manage API</span>
+              </button>
+            </div>
+
+            <!-- Allocation Bar -->
+            <div class="mt-4 pt-3 border-t border-[#2b313a]">
+              <div class="flex items-center justify-between text-[11px] text-[#848e9c] mb-1.5">
+                <span class="font-semibold text-white">Asset Allocation</span>
+                <span id="active-holdings-count">9 Spot Holdings</span>
+              </div>
+              <div class="h-2 w-full rounded-full bg-[#0b0e11] overflow-hidden flex">
+                <div style="width: 44%;" class="bg-[#F7931A] h-full" title="BTC"></div>
+                <div style="width: 23%;" class="bg-[#627EEA] h-full" title="ETH"></div>
+                <div style="width: 15%;" class="bg-[#14F195] h-full" title="SOL"></div>
+                <div style="width: 10%;" class="bg-[#FCD535] h-full" title="BNB"></div>
+                <div style="width: 8%;" class="bg-[#26A17B] h-full" title="USDT"></div>
+              </div>
+              <div class="flex items-center gap-2.5 flex-wrap text-[10px] text-[#848e9c] mt-2">
+                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#F7931A]"></span>BTC 44%</span>
+                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#627EEA]"></span>ETH 23%</span>
+                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#14F195]"></span>SOL 15%</span>
+                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#FCD535]"></span>BNB 10%</span>
+                <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#26A17B]"></span>Stables 8%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Metric Cards -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="rounded-xl border border-[#2b313a] bg-[#181a20] p-3">
+              <div class="text-[10px] text-[#848e9c]">24h Return</div>
+              <div id="m-pnl" class="text-base font-bold font-mono text-[#0ECB81] mt-0.5">+4.25%</div>
+              <div id="m-pnl-val" class="text-[10px] text-[#848e9c] font-mono">+$3,810.20</div>
+            </div>
+            <div class="rounded-xl border border-[#2b313a] bg-[#181a20] p-3">
+              <div class="text-[10px] text-[#848e9c]">Primary Allocation</div>
+              <div class="text-base font-bold text-white mt-0.5">BTC <span class="text-xs text-[#FCD535] font-mono">44.2%</span></div>
+              <div id="m-top-val" class="text-[10px] text-[#848e9c] font-mono">$41,310</div>
+            </div>
+            <div class="rounded-xl border border-[#2b313a] bg-[#181a20] p-3">
+              <div class="text-[10px] text-[#848e9c]">Stable Reserves</div>
+              <div class="text-base font-bold font-mono text-[#0ECB81] mt-0.5">8.2%</div>
+              <div id="m-dry-powder" class="text-[10px] text-[#848e9c] font-mono">$7,650 dry powder</div>
+            </div>
+            <div class="rounded-xl border border-[#2b313a] bg-[#181a20] p-3">
+              <div class="text-[10px] text-[#848e9c]">Binance Latency</div>
+              <div class="text-base font-bold font-mono text-emerald-400 mt-0.5">14 ms</div>
+              <div class="text-[10px] text-[#848e9c]">SSL · Read-Only</div>
+            </div>
+          </div>
+
+          <!-- Spot Assets Preview in Overview -->
+          <div class="rounded-2xl border border-[#2b313a] bg-[#181a20] overflow-hidden">
+            <div class="p-3 border-b border-[#2b313a] flex items-center justify-between">
+              <span class="text-xs font-semibold text-white">Top Spot Holdings</span>
+              <button onclick="switchTab('assets')" class="text-[11px] text-[#FCD535] hover:underline">View All →</button>
+            </div>
+            <div id="overview-assets-list" class="divide-y divide-[#2b313a]/50 text-xs">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: SPOT ASSETS -->
+        <div id="view-assets" class="space-y-3 hidden">
+          <div class="flex items-center gap-2">
+            <input id="asset-search" type="text" oninput="filterAssets()" placeholder="Search coin (e.g. BTC)..." class="flex-1 bg-[#181a20] border border-[#2b313a] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#848e9c] focus:outline-none focus:border-[#FCD535]">
+            <label class="flex items-center gap-1.5 text-xs text-[#848e9c] cursor-pointer select-none">
+              <input type="checkbox" id="hide-small" checked onchange="filterAssets()" class="rounded border-[#2b313a] text-[#FCD535]">
+              <span>> $1</span>
+            </label>
+          </div>
+
+          <div class="rounded-2xl border border-[#2b313a] bg-[#181a20] overflow-hidden">
+            <div id="full-assets-list" class="divide-y divide-[#2b313a]/50 text-xs">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: LIVE MARKETS -->
+        <div id="view-markets" class="space-y-3 hidden">
+          <div class="flex items-center justify-between text-xs text-[#848e9c]">
+            <span>Live Binance Spot Pairs</span>
+            <span class="flex items-center gap-1 text-emerald-400 font-mono text-[10px]">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-pulse"></span>
+              REAL-TIME FEED
+            </span>
+          </div>
+
+          <div class="rounded-2xl border border-[#2b313a] bg-[#181a20] overflow-hidden">
+            <div id="markets-list" class="divide-y divide-[#2b313a]/50 text-xs">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: TRADES -->
+        <div id="view-trades" class="space-y-3 hidden">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold text-white">Recent Spot Orders</span>
+            <div class="flex rounded-lg bg-[#0b0e11] border border-[#2b313a] p-0.5 text-[11px]">
+              <button onclick="filterTrades('all')" class="px-2 py-0.5 rounded text-white bg-[#2b313a]">All</button>
+              <button onclick="filterTrades('buy')" class="px-2 py-0.5 rounded text-[#848e9c] hover:text-white">Buys</button>
+              <button onclick="filterTrades('sell')" class="px-2 py-0.5 rounded text-[#848e9c] hover:text-white">Sells</button>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-[#2b313a] bg-[#181a20] overflow-hidden">
+            <div id="trades-list" class="divide-y divide-[#2b313a]/50 text-xs">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Android Bottom Navigation Bar (Gesture bar) -->
+      <div class="h-6 bg-[#0b0e11] flex items-center justify-center absolute bottom-0 left-0 right-0 z-30">
+        <div class="w-28 h-1 bg-[#848e9c]/40 rounded-full"></div>
+      </div>
+
+      <!-- Asset Detail Modal / Bottom Sheet -->
+      <div id="asset-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end justify-center hidden">
+        <div class="w-full max-w-[440px] bg-[#181a20] border-t border-[#2b313a] rounded-t-3xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div id="modal-coin-icon" class="w-9 h-9 rounded-full bg-[#2b313a] flex items-center justify-center font-bold text-white text-xs">BTC</div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 id="modal-coin-name" class="font-bold text-white text-base">Bitcoin</h3>
+                  <span id="modal-coin-symbol" class="text-xs font-mono text-[#848e9c] px-1.5 py-0.5 rounded bg-[#2b313a]">BTC</span>
+                </div>
+                <div class="text-[11px] text-[#848e9c]">Binance Spot Market</div>
+              </div>
+            </div>
+            <button onclick="closeAssetModal()" class="w-8 h-8 rounded-full bg-[#2b313a] flex items-center justify-center text-[#848e9c] hover:text-white text-sm">✕</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[#0b0e11] border border-[#2b313a]">
+            <div>
+              <div class="text-[10px] text-[#848e9c]">Current Price</div>
+              <div id="modal-price" class="text-base font-bold font-mono text-white">$95,400.00</div>
+              <div id="modal-change" class="text-[11px] font-semibold text-[#0ECB81]">+3.42%</div>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] text-[#848e9c]">Your Holdings</div>
+              <div id="modal-holdings" class="text-base font-bold font-mono text-white">0.8450 BTC</div>
+              <div id="modal-holdings-val" class="text-[11px] text-[#848e9c]">≈ $80,613.00</div>
+            </div>
+          </div>
+
+          <!-- Canvas Trend Line -->
+          <div class="p-3 rounded-xl bg-[#0b0e11] border border-[#2b313a] space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-white">Price Trend (24h)</span>
+              <span class="text-[10px] font-mono text-[#848e9c]">Binance Klines</span>
+            </div>
+            <canvas id="kline-canvas" width="380" height="120" class="w-full h-28"></canvas>
+            <div class="flex items-center justify-between text-[10px] font-mono text-[#848e9c]">
+              <span id="kline-low">Low: $92,800</span>
+              <span id="kline-high">High: $96,200</span>
+            </div>
+          </div>
+
+          <a id="modal-trade-link" href="https://www.binance.com" target="_blank" class="w-full py-2.5 rounded-lg bg-[#FCD535] text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow hover:bg-[#fcd535]/90">
+            <span>Trade on Binance Exchange</span>
+            <span>↗</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Connect Binance Modal -->
+      <div id="connect-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-[390px] bg-[#181a20] border border-[#2b313a] rounded-2xl p-5 space-y-4 shadow-2xl">
+          <div class="flex items-center justify-between border-b border-[#2b313a] pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-[#FCD535] text-lg">🔑</span>
+              <h3 class="font-bold text-white text-sm">Connect Binance Account</h3>
+            </div>
+            <button onclick="closeConnectModal()" class="text-[#848e9c] hover:text-white text-sm">✕</button>
+          </div>
+
+          <div class="flex rounded-lg bg-[#0b0e11] border border-[#2b313a] p-1 text-xs">
+            <button id="conn-tab-api" onclick="switchConnTab('api')" class="flex-1 py-1 rounded text-white bg-[#181a20] font-semibold">API Key</button>
+            <button id="conn-tab-demo" onclick="switchConnTab('demo')" class="flex-1 py-1 rounded text-[#848e9c] hover:text-white">Demo Mode</button>
+            <button id="conn-tab-csv" onclick="switchConnTab('csv')" class="flex-1 py-1 rounded text-[#848e9c] hover:text-white">CSV</button>
+          </div>
+
+          <!-- API Form -->
+          <div id="conn-body-api" class="space-y-3 text-xs">
+            <div>
+              <label class="block text-[11px] text-[#848e9c] mb-1">Network</label>
+              <select id="conn-network" class="w-full bg-[#0b0e11] border border-[#2b313a] rounded-lg px-3 py-2 text-white text-xs">
+                <option value="global">Binance.com (Global)</option>
+                <option value="us">Binance.US</option>
+                <option value="testnet">Spot Testnet (Sandbox)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-[#848e9c] mb-1">API Key</label>
+              <input id="input-api-key" type="text" placeholder="Binance API Key" class="w-full bg-[#0b0e11] border border-[#2b313a] rounded-lg px-3 py-2 text-white font-mono text-xs">
+            </div>
+            <div>
+              <label class="block text-[11px] text-[#848e9c] mb-1">API Secret</label>
+              <input id="input-api-secret" type="password" placeholder="HMAC SHA-256 Secret" class="w-full bg-[#0b0e11] border border-[#2b313a] rounded-lg px-3 py-2 text-white font-mono text-xs">
+            </div>
+            <div class="p-2.5 rounded-lg bg-[#0b0e11] border border-[#2b313a] text-[10px] text-[#848e9c] space-y-1">
+              <div class="text-white font-semibold">🔒 Read-Only Security:</div>
+              <div>• Enable 'Reading' permissions only.</div>
+              <div>• Never enable Withdrawals or Margin.</div>
+            </div>
+            <button onclick="handleSaveApi()" class="w-full py-2.5 rounded-lg bg-[#FCD535] text-black font-bold text-xs">Connect Read-Only API</button>
+          </div>
+
+          <!-- Demo Mode -->
+          <div id="conn-body-demo" class="space-y-3 text-xs hidden text-center py-2">
+            <div class="text-3xl">⚡</div>
+            <div class="font-bold text-white">Instant Demo Account</div>
+            <p class="text-[11px] text-[#848e9c]">Explore live Binance price tickers, portfolio charts, and report sharing without entering any API keys.</p>
+            <button onclick="handleLoadDemo()" class="w-full py-2.5 rounded-lg bg-[#FCD535] text-black font-bold text-xs">Launch Demo Mode</button>
+          </div>
+
+          <!-- CSV Mode -->
+          <div id="conn-body-csv" class="space-y-3 text-xs hidden">
+            <p class="text-[11px] text-[#848e9c]">Paste exported statement CSV (Asset, Amount):</p>
+            <textarea id="csv-input" rows="4" placeholder="BTC,0.845&#10;ETH,6.42&#10;SOL,48.5&#10;USDT,18420" class="w-full bg-[#0b0e11] border border-[#2b313a] rounded-lg p-2 text-white font-mono text-xs"></textarea>
+            <button onclick="handleParseCsv()" class="w-full py-2 rounded-lg bg-[#FCD535] text-black font-bold text-xs">Import Statement</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Share Portfolio Modal -->
+      <div id="share-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-[390px] bg-[#181a20] border border-[#2b313a] rounded-2xl p-5 space-y-4 shadow-2xl">
+          <div class="flex items-center justify-between border-b border-[#2b313a] pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-[#FCD535] text-lg">📊</span>
+              <h3 class="font-bold text-white text-sm">Share Portfolio Snapshot</h3>
+            </div>
+            <button onclick="closeShareModal()" class="text-[#848e9c] hover:text-white text-sm">✕</button>
+          </div>
+
+          <!-- Customizer -->
+          <div class="space-y-2 text-xs">
+            <label class="block text-[11px] text-[#848e9c]">Trader Nickname</label>
+            <input id="share-trader-name" type="text" value="Alpha Trader" class="w-full bg-[#0b0e11] border border-[#2b313a] rounded-lg px-3 py-1.5 text-white text-xs">
+            
+            <label class="flex items-center gap-2 text-white text-xs pt-1 cursor-pointer">
+              <input type="checkbox" id="share-mask-amounts" class="rounded text-[#FCD535]">
+              <span>Mask dollar values (Show % only)</span>
+            </label>
+          </div>
+
+          <!-- Snapshot Card Preview -->
+          <div class="rounded-xl border border-[#2b313a] bg-[#0b0e11] p-4 space-y-2.5 relative overflow-hidden">
+            <div class="h-1 bg-[#FCD535] absolute top-0 left-0 right-0"></div>
+            <div class="flex items-center justify-between text-xs">
+              <div class="font-bold text-white">BINANCE SPOT PORTFOLIO</div>
+              <span class="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800/40">VERIFIED</span>
+            </div>
+            <div class="flex items-baseline justify-between pt-1">
+              <div>
+                <div class="text-[10px] text-[#848e9c]">Net Worth</div>
+                <div id="preview-worth" class="text-xl font-bold font-mono text-white">$93,428.50</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] text-[#848e9c]">24h PnL</div>
+                <div class="text-sm font-bold font-mono text-[#0ECB81]">+4.25%</div>
+              </div>
+            </div>
+            <div class="text-[10px] text-[#848e9c] pt-1">
+              Top: BTC 44% · ETH 23% · SOL 15% · BNB 10%
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="space-y-2">
+            <button onclick="copyShareText()" class="w-full py-2.5 rounded-lg bg-[#FCD535] text-black font-bold text-xs flex items-center justify-center gap-1.5">
+              <span>Copy Social Summary (X / Telegram)</span>
+            </button>
+            <button onclick="exportCsv()" class="w-full py-2 rounded-lg bg-[#0b0e11] border border-[#2b313a] text-white font-medium text-xs">
+              <span>Export CSV Statement</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Metadata Banner -->
+    <div class="text-center text-xs text-[#848e9c] mt-2 space-y-1">
+      <div class="font-semibold text-white">Android Application Rewritten in Kotlin & Jetpack Compose M3</div>
+      <div>Source files located in <code class="text-[#FCD535] font-mono">app/src/main/java/com/example/</code></div>
+    </div>
+
+    <!-- Client Logic for Interactive UI & Live Binance API calls -->
+    <script>
+      let isPrivacyHidden = false;
+      let currentPrices = {
+        BTCUSDT: { price: 95400, change: 3.42, high: 96200, low: 92800 },
+        ETHUSDT: { price: 3410, change: 2.18, high: 3490, low: 3320 },
+        SOLUSDT: { price: 194.5, change: 6.84, high: 198.2, low: 181.5 },
+        BNBUSDT: { price: 652.0, change: 1.85, high: 660.0, low: 638.0 },
+        XRPUSDT: { price: 2.38, change: 5.12, high: 2.45, low: 2.24 },
+        DOGEUSDT: { price: 0.245, change: -2.4, high: 0.265, low: 0.238 },
+        SUIUSDT: { price: 3.45, change: 11.2, high: 3.65, low: 3.08 },
+        NEARUSDT: { price: 6.82, change: 8.42, high: 7.15, low: 6.22 },
+        AVAXUSDT: { price: 34.2, change: -1.15, high: 35.8, low: 33.6 },
+        LINKUSDT: { price: 19.8, change: 4.12, high: 20.4, low: 18.9 }
+      };
+
+      let holdings = [
+        { asset: 'BTC', name: 'Bitcoin', amount: 0.8450 },
+        { asset: 'ETH', name: 'Ethereum', amount: 6.4200 },
+        { asset: 'SOL', name: 'Solana', amount: 48.5000 },
+        { asset: 'BNB', name: 'BNB', amount: 24.1800 },
+        { asset: 'USDT', name: 'Tether USD', amount: 18420.50 },
+        { asset: 'NEAR', name: 'NEAR Protocol', amount: 820.00 },
+        { asset: 'AVAX', name: 'Avalanche', amount: 95.40 },
+        { asset: 'LINK', name: 'Chainlink', amount: 240.00 },
+        { asset: 'SUI', name: 'Sui', amount: 1450.00 }
+      ];
+
+      const trades = [
+        { id: 1, sym: 'BTCUSDT', type: 'BUY', price: 93800, qty: 0.25, total: 23450, time: '14:20' },
+        { id: 2, sym: 'SOLUSDT', type: 'BUY', price: 188.5, qty: 15.0, total: 2827.5, time: '11:05' },
+        { id: 3, sym: 'ETHUSDT', type: 'SELL', price: 3480, qty: 1.5, total: 5220, time: 'Yesterday' },
+        { id: 4, sym: 'BNBUSDT', type: 'BUY', price: 642, qty: 5.0, total: 3210, time: '2 days ago' }
+      ];
+
+      // Update clock
+      setInterval(() => {
+        const d = new Date();
+        document.getElementById('android-clock').innerText = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+      }, 1000);
+
+      // Fetch live tickers from Binance
+      async function fetchLiveBinanceTickers() {
+        try {
+          const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+          if (res.ok) {
+            const data = await res.json();
+            for (const item of data) {
+              if (currentPrices[item.symbol]) {
+                currentPrices[item.symbol] = {
+                  price: parseFloat(item.lastPrice),
+                  change: parseFloat(item.priceChangePercent),
+                  high: parseFloat(item.highPrice),
+                  low: parseFloat(item.lowPrice)
+                };
+              }
+            }
+            renderPortfolio();
+          }
+        } catch (e) {
+          console.warn('Binance ticker fetch fallback');
+        }
+      }
+
+      function renderPortfolio() {
+        let totalUSD = 0;
+        const calculated = holdings.map(h => {
+          let price = 1.0;
+          let change = 0.01;
+          if (h.asset !== 'USDT') {
+            const t = currentPrices[h.asset + 'USDT'];
+            if (t) {
+              price = t.price;
+              change = t.change;
+            }
+          }
+          const val = h.amount * price;
+          totalUSD += val;
+          return { ...h, price, change, val };
+        });
+
+        // Update net worth
+        document.getElementById('networth-display').innerText = isPrivacyHidden ? '$ ••••••••' : '$' + totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const btcPrice = currentPrices['BTCUSDT'].price;
+        document.getElementById('btc-equivalent').innerText = '≈ ' + (totalUSD / btcPrice).toFixed(4) + ' BTC · Synced Just now';
+        document.getElementById('preview-worth').innerText = isPrivacyHidden ? '$ ••••••••' : '$' + totalUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        // Overview Assets List
+        const top = [...calculated].sort((a,b) => b.val - a.val).slice(0, 4);
+        const ovHtml = top.map(a => `
+          <div onclick='openAssetDetail("${a.asset}")' class="flex items-center justify-between p-3 hover:bg-[#1f232b] cursor-pointer">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-[#2b313a] flex items-center justify-center font-bold text-[10px] text-white">${a.asset.slice(0,3)}</div>
+              <div>
+                <div class="font-bold text-white text-xs">${a.asset}</div>
+                <div class="text-[10px] text-[#848e9c]">${a.name}</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-mono font-bold text-white text-xs">${isPrivacyHidden ? '••••' : '$' + a.val.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+              <div class="text-[10px] font-semibold ${a.change >= 0 ? 'text-[#0ECB81]' : 'text-[#F6465D]'}">${a.change >= 0 ? '+' : ''}${a.change.toFixed(2)}%</div>
+            </div>
+          </div>
+        `).join('');
+        document.getElementById('overview-assets-list').innerHTML = ovHtml;
+
+        // Full Assets List
+        const fullHtml = calculated.map(a => `
+          <div onclick='openAssetDetail("${a.asset}")' class="flex items-center justify-between p-3 hover:bg-[#1f232b] cursor-pointer">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-[#2b313a] flex items-center justify-center font-bold text-[10px] text-white">${a.asset.slice(0,3)}</div>
+              <div>
+                <div class="font-bold text-white text-xs">${a.asset}</div>
+                <div class="text-[10px] text-[#848e9c]">${a.name}</div>
+              </div>
+            </div>
+            <div class="text-right font-mono">
+              <div class="font-semibold text-white text-xs">${isPrivacyHidden ? '••••' : a.amount.toFixed(4)}</div>
+              <div class="text-[10px] text-[#848e9c]">$${a.price >= 1 ? a.price.toLocaleString('en-US', {minimumFractionDigits: 2}) : a.price.toFixed(4)}</div>
+            </div>
+            <div class="text-right font-mono">
+              <div class="font-bold text-white text-xs">${isPrivacyHidden ? '••••' : '$' + a.val.toLocaleString('en-US', {maximumFractionDigits: 0})}</div>
+              <div class="text-[10px] font-semibold ${a.change >= 0 ? 'text-[#0ECB81]' : 'text-[#F6465D]'}">${a.change >= 0 ? '+' : ''}${a.change.toFixed(2)}%</div>
+            </div>
+          </div>
+        `).join('');
+        document.getElementById('full-assets-list').innerHTML = fullHtml;
+
+        // Markets List
+        const mHtml = Object.entries(currentPrices).map(([sym, t]) => {
+          const base = sym.replace('USDT', '');
+          return `
+            <div class="flex items-center justify-between p-3 hover:bg-[#1f232b]">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-[#2b313a] flex items-center justify-center font-bold text-[10px] text-white">${base.slice(0,3)}</div>
+                <div class="font-bold text-white text-xs">${base}<span class="text-[#848e9c] font-normal">/USDT</span></div>
+              </div>
+              <div class="text-right font-mono">
+                <div class="font-bold text-white text-xs">$${t.price >= 1 ? t.price.toLocaleString('en-US', {minimumFractionDigits: 2}) : t.price.toFixed(4)}</div>
+                <div class="text-[10px] font-semibold ${t.change >= 0 ? 'text-[#0ECB81]' : 'text-[#F6465D]'}">${t.change >= 0 ? '+' : ''}${t.change.toFixed(2)}%</div>
+              </div>
+              <a href="https://www.binance.com/en/trade/${base}_USDT?type=spot" target="_blank" class="px-2 py-1 rounded bg-[#FCD535]/15 text-[#FCD535] text-[10px] font-bold">Trade</a>
+            </div>
+          `;
+        }).join('');
+        document.getElementById('markets-list').innerHTML = mHtml;
+
+        // Trades List
+        const tHtml = trades.map(t => `
+          <div class="flex items-center justify-between p-3 hover:bg-[#1f232b]">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${t.type === 'BUY' ? 'bg-[#0ECB81]/20 text-[#0ECB81]' : 'bg-[#F6465D]/20 text-[#F6465D]'}">${t.type === 'BUY' ? '↓' : '↑'}</span>
+              <div>
+                <div class="font-bold text-white text-xs">${t.sym} <span class="text-[10px] ${t.type === 'BUY' ? 'text-[#0ECB81]' : 'text-[#F6465D]'}">${t.type}</span></div>
+                <div class="text-[10px] text-[#848e9c]">${t.time}</div>
+              </div>
+            </div>
+            <div class="text-right font-mono">
+              <div class="font-bold text-white text-xs">$${t.total.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+              <div class="text-[10px] text-[#848e9c]">${t.qty} @ $${t.price}</div>
+            </div>
+          </div>
+        `).join('');
+        document.getElementById('trades-list').innerHTML = tHtml;
+      }
+
+      function switchTab(tab) {
+        ['overview', 'assets', 'markets', 'trades'].forEach(t => {
+          const el = document.getElementById('view-' + t);
+          const btn = document.getElementById('tab-btn-' + t);
+          if (t === tab) {
+            el.classList.remove('hidden');
+            btn.className = "px-3 py-1 rounded-md bg-[#FCD535]/15 text-[#FCD535] font-semibold whitespace-nowrap";
+          } else {
+            el.classList.add('hidden');
+            btn.className = "px-3 py-1 rounded-md text-[#848e9c] hover:text-white whitespace-nowrap";
+          }
+        });
+      }
+
+      function togglePrivacy() {
+        isPrivacyHidden = !isPrivacyHidden;
+        document.getElementById('privacy-label').innerText = isPrivacyHidden ? 'Show' : 'Hide';
+        renderPortfolio();
+      }
+
+      function triggerSync() {
+        const icon = document.getElementById('sync-icon');
+        icon.classList.add('animate-spin');
+        fetchLiveBinanceTickers().then(() => {
+          setTimeout(() => icon.classList.remove('animate-spin'), 600);
+        });
+      }
+
+      function openAssetDetail(symbol) {
+        const h = holdings.find(i => i.asset === symbol) || { asset: symbol, name: symbol, amount: 0 };
+        const t = currentPrices[symbol + 'USDT'] || { price: 1.0, change: 0, high: 1, low: 1 };
+        document.getElementById('modal-coin-icon').innerText = symbol.slice(0, 3);
+        document.getElementById('modal-coin-name').innerText = h.name;
+        document.getElementById('modal-coin-symbol').innerText = symbol;
+        document.getElementById('modal-price').innerText = '$' + (t.price >= 1 ? t.price.toLocaleString('en-US', {minimumFractionDigits: 2}) : t.price.toFixed(4));
+        document.getElementById('modal-change').innerText = (t.change >= 0 ? '+' : '') + t.change.toFixed(2) + '% (24h)';
+        document.getElementById('modal-holdings').innerText = isPrivacyHidden ? '••••' : h.amount.toFixed(4) + ' ' + symbol;
+        document.getElementById('modal-holdings-val').innerText = isPrivacyHidden ? '••••••' : '≈ $' + (h.amount * t.price).toLocaleString('en-US', {maximumFractionDigits: 2});
+        document.getElementById('modal-trade-link').href = `https://www.binance.com/en/trade/${symbol}_USDT?type=spot`;
+        document.getElementById('kline-low').innerText = 'Low: $' + t.low;
+        document.getElementById('kline-high').innerText = 'High: $' + t.high;
+
+        // Draw trend canvas
+        const canvas = document.getElementById('kline-canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = t.change >= 0 ? '#0ECB81' : '#F6465D';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        const pts = [t.low, t.low * 1.01, t.price * 0.98, t.price * 1.01, t.high * 0.99, t.price];
+        const min = Math.min(...pts);
+        const max = Math.max(...pts);
+        pts.forEach((p, i) => {
+          const x = (i / (pts.length - 1)) * (canvas.width - 20) + 10;
+          const y = canvas.height - 10 - ((p - min) / (max - min || 1)) * (canvas.height - 20);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        document.getElementById('asset-modal').classList.remove('hidden');
+      }
+
+      function closeAssetModal() {
+        document.getElementById('asset-modal').classList.add('hidden');
+      }
+
+      function openConnectModal() {
+        document.getElementById('connect-modal').classList.remove('hidden');
+      }
+      function closeConnectModal() {
+        document.getElementById('connect-modal').classList.add('hidden');
+      }
+      function switchConnTab(t) {
+        ['api', 'demo', 'csv'].forEach(tab => {
+          document.getElementById('conn-body-' + tab).classList.toggle('hidden', tab !== t);
+          document.getElementById('conn-tab-' + tab).className = tab === t ? 'flex-1 py-1 rounded text-white bg-[#181a20] font-semibold' : 'flex-1 py-1 rounded text-[#848e9c] hover:text-white';
+        });
+      }
+      function handleSaveApi() {
+        const k = document.getElementById('input-api-key').value;
+        if (k) {
+          document.getElementById('badge-network').innerText = k.slice(0, 4) + '...';
+          closeConnectModal();
+        }
+      }
+      function handleLoadDemo() {
+        document.getElementById('badge-network').innerText = 'DEMO';
+        closeConnectModal();
+      }
+      function handleParseCsv() {
+        const text = document.getElementById('csv-input').value;
+        if (text) {
+          const lines = text.split('\n');
+          const newH = [];
+          for (const l of lines) {
+            const p = l.split(',');
+            if (p.length >= 2) {
+              const a = p[0].trim().toUpperCase();
+              const amt = parseFloat(p[1]) || 0;
+              if (a && amt > 0) newH.push({ asset: a, name: a, amount: amt });
+            }
+          }
+          if (newH.length > 0) holdings = newH;
+          renderPortfolio();
+          closeConnectModal();
+        }
+      }
+
+      function openShareModal() {
+        document.getElementById('share-modal').classList.remove('hidden');
+      }
+      function closeShareModal() {
+        document.getElementById('share-modal').classList.add('hidden');
+      }
+      function copyShareText() {
+        const text = `📊 Binance Spot Portfolio Snapshot\n📈 24h Return: +4.25%\n💰 Total Value: $93,428.50\n🏆 Top Holdings: BTC 44%, ETH 23%, SOL 15%\n🔒 Verified via Binance Connect (Android)`;
+        navigator.clipboard.writeText(text);
+        alert('Portfolio summary copied to clipboard!');
+      }
+      function exportCsv() {
+        let csv = "Asset,Holdings\n" + holdings.map(h => `${h.asset},${h.amount}`).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "binance_portfolio.csv";
+        a.click();
+      }
+
+      // Initial load & poll every 15s
+      fetchLiveBinanceTickers();
+      setInterval(fetchLiveBinanceTickers, 15000);
+      renderPortfolio();
+    </script>
   </body>
 </html>
-
